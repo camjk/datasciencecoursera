@@ -1,0 +1,49 @@
+library(tidyverse)
+mydata2 <- read.csv("/Users/camilla.kraemer/Documents/Camilla/Promotion/PhD/Data/Brain_Data/Metrics_without_confounders/Input_Rscript/29-06-2020/Sample635_Brain_Sample.csv", sep = ";")
+View(mydata2)
+
+mydata2$Age <- gsub("\\,", ".", mydata2$Age)
+
+class(mydata2$Age) <- "numeric"
+
+mydata2[2:2001] <- gsub("\\,", ".", mydata2[2:2001])
+
+class(mydata2) <- "numeric"
+
+mydata2[mydata2==-Inf] <- NA
+
+### für eine Variable 
+###cor.test( ~ Vis_w + Age, 
+###          data=mydata2,
+###          method = "pearson",
+###          conf.level = 0.95)
+
+###model <- lm(formula= Q_Joh_Default ~ Age + ISCED97 + Sex_coded, data=mydata2, na.action=na.omit)
+
+###resid <- residuals(model)
+
+##### For loop für mehrere Variablen| predictors network (2:22)2:2001|variables network (23, 25:26)2002, 2004:2005
+predictors <- mydata2 %>% select(2:1622)
+variables <- mydata2  %>%  select(1623:1625)
+data_mods <- NULL
+result <- data.frame()
+for(predictor in predictors){
+  
+  data_mods <- lm(as.formula(paste("predictor~", paste(variables, collapse="+"))), data=mydata2, na.action=na.omit)
+  
+  resid <-residuals(data_mods)
+  result <- rbind (result, resid)
+  
+}
+
+##names network (2:22)2:2001
+result_transpose<- as.data.frame(t(as.matrix(result)))
+result_transpose <- setNames(result_transpose, names(mydata2[2:1622]))
+row.names(result_transpose) <- mydata2$pid
+result_transpose <- cbind(mydata2$pid, result_transpose)
+
+setwd("/Users/camilla.kraemer/Documents/Camilla/Promotion/PhD/Data/Brain_Data/Metrics_without_confounders/Output_RScript")
+write.csv(result_transpose, file = "29-06-2020-netnode_ohne_confounder_new.csv")
+library(writexl)
+write_xlsx(result_transpose, "29-06-2020-netnode_ohne_confounder_new.xlsx")
+
